@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lista de Compras</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f9d62">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1c2430;--mut:#6b7686;--bd:#e1e5ea;--ac:#1f9d62;--acx:#fff;--dg:#d64545;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181d;--card:#1e242b;--tx:#eef1f4;--mut:#9aa5b3;--bd:#2f3842;--ac:#3cc785;--acx:#06210f;--dg:#ff7a7a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181d;--card:#1e242b;--tx:#eef1f4;--mut:#9aa5b3;--bd:#2f3842;--ac:#3cc785;--acx:#06210f;--dg:#ff7a7a;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{background:var(--bg);padding:12px 12px 120px;max-width:720px;margin:0 auto}
+h1{font-size:1.3rem;margin:8px 4px 12px}
+.add{display:flex;gap:8px;margin-bottom:12px}
+.add input{flex:1;min-width:0}
+input{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}
+button{font:inherit;border:0;border-radius:10px;padding:10px 16px;background:var(--ac);color:var(--acx);font-weight:600}
+.wrap{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th{font-size:.75rem;text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 8px;border-bottom:1px solid var(--bd)}
+td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td input[type=number]{width:84px;padding:8px}
+td input.q{width:64px}
+td input[type=checkbox]{width:24px;height:24px;accent-color:var(--ac)}
+tr.done .nm{text-decoration:line-through;color:var(--mut)}
+.tot{font-weight:600;white-space:nowrap}
+.x{background:none;color:var(--dg);padding:6px 10px;font-size:1.1rem}
+.empty{padding:24px;text-align:center;color:var(--mut)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bar small{display:block;color:var(--mut)}
+.bar b{font-size:1.25rem}
+.clr{background:none;color:var(--mut);border:1px solid var(--bd);margin:12px 0 0;font-weight:500}
+</style>
+</head>
+<body>
+<h1>🛒 Lista de Compras</h1>
+<div class="add">
+  <input id="novo" placeholder="Adicionar produto…" autocomplete="off">
+  <button id="btn">Adicionar</button>
+</div>
+<div class="wrap"><table>
+  <thead><tr><th></th><th>Produto</th><th>Qtd</th><th>Valor unit.</th><th>Total</th><th></th></tr></thead>
+  <tbody id="corpo"></tbody>
+</table></div>
+<button class="clr" id="limpa">Remover itens marcados</button>
+<div class="bar">
+  <div><small>No carrinho</small><b id="car">R$ 0,00</b></div>
+  <div style="text-align:right"><small>Total da lista</small><b id="ger">R$ 0,00</b></div>
+</div>
+<script>
+var KEY="listaCompras",itens=[];
+try{itens=JSON.parse(localStorage.getItem(KEY)||"[]")||[]}catch(e){itens=[]}
+function salva(){try{localStorage.setItem(KEY,JSON.stringify(itens))}catch(e){}}
+function brl(n){return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function esc(s){return s.replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function linha(i,it){return '<tr data-i="'+i+'" class="'+(it.ok?"done":"")+'"><td><input type="checkbox" '+(it.ok?"checked":"")+'></td><td class="nm">'+esc(it.nome)+'</td><td><input class="q" type="number" min="0" step="1" inputmode="numeric" value="'+it.qtd+'"></td><td><input class="p" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" value="'+(it.preco||"")+'"></td><td class="tot">'+brl(it.qtd*it.preco)+'</td><td><button class="x" aria-label="Remover">✕</button></td></tr>'}
+function resumo(){var g=0,c=0;itens.forEach(function(it){var t=it.qtd*it.preco;g+=t;if(it.ok)c+=t});document.getElementById("ger").textContent=brl(g);document.getElementById("car").textContent=brl(c)}
+function desenha(){var b=document.getElementById("corpo");b.innerHTML=itens.length?itens.map(function(it,i){return linha(i,it)}).join(""):'<tr><td colspan="6" class="empty">Sua lista está vazia. Adicione um produto acima.</td></tr>';resumo()}
+function add(){var i=document.getElementById("novo"),n=i.value.trim();if(!n)return;itens.push({nome:n,qtd:1,preco:0,ok:false});i.value="";salva();desenha();i.focus()}
+document.getElementById("btn").onclick=add;
+document.getElementById("novo").onkeydown=function(e){if(e.key==="Enter")add()};
+var corpo=document.getElementById("corpo");
+corpo.addEventListener("change",function(e){var tr=e.target.closest("tr");if(!tr||tr.dataset.i===undefined)return;if(e.target.type==="checkbox"){itens[tr.dataset.i].ok=e.target.checked;tr.className=e.target.checked?"done":"";salva();resumo()}});
+corpo.addEventListener("input",function(e){var tr=e.target.closest("tr");if(!tr||tr.dataset.i===undefined)return;var it=itens[tr.dataset.i];if(e.target.classList.contains("q"))it.qtd=parseFloat(e.target.value)||0;else if(e.target.classList.contains("p"))it.preco=parseFloat(e.target.value)||0;else return;tr.querySelector(".tot").textContent=brl(it.qtd*it.preco);salva();resumo()});
+corpo.addEventListener("click",function(e){if(!e.target.classList.contains("x"))return;itens.splice(e.target.closest("tr").dataset.i,1);salva();desenha()});
+document.getElementById("limpa").onclick=function(){itens=itens.filter(function(it){return!it.ok});salva();desenha()};
+desenha();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){})}
+</script>
+</body>
+</html>
